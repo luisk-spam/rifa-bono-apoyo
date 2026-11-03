@@ -28,6 +28,23 @@ function publico(e) {
     ganadorNombre: ganador && e.boletas[ganador] ? e.boletas[ganador].n.split(" ")[0] : "" };
 }
 
+// El celular es de la persona, no del número: si se da uno, queda en todos sus números,
+// y si alguno de sus números ya tiene celular, los demás lo heredan.
+function unificarTel(estado, nombre, tel) {
+  const clave = (x) => x.trim().toLowerCase();
+  if (nombre && tel) {
+    for (const b of Object.values(estado.boletas)) if (clave(b.n) === clave(nombre)) b.tel = tel;
+  }
+  const telDe = {};
+  for (const b of Object.values(estado.boletas)) if (b.tel && !telDe[clave(b.n)]) telDe[clave(b.n)] = b.tel;
+  let cambio = false;
+  for (const b of Object.values(estado.boletas)) {
+    const t = telDe[clave(b.n)];
+    if (t && !b.tel) { b.tel = t; cambio = true; }
+  }
+  return cambio;
+}
+
 export default async (req) => {
   const store = getStore({ name: "rifa", consistency: "strong" });
   let estado = await store.get("estado", { type: "json" });
@@ -35,6 +52,7 @@ export default async (req) => {
     estado = structuredClone(semilla);
     await store.setJSON("estado", estado);
   }
+  if (unificarTel(estado)) await store.setJSON("estado", estado);
   const esAdmin = codigoValido(req.headers.get("x-admin-code"));
   const guardar = async () => {
     estado.actualizado = new Date().toISOString();
@@ -70,6 +88,7 @@ export default async (req) => {
       if (tel) b.tel = tel;
       estado.boletas[n] = b;
     }
+    unificarTel(estado, nombre, tel);
     await guardar();
     return json({ ok: true, estado: publico(estado) });
   }
@@ -89,6 +108,7 @@ export default async (req) => {
       if (tel) b.tel = tel;
       if (nota) b.nota = nota;
       estado.boletas[k] = b;
+      unificarTel(estado, n, tel);
     }
   } else if (accion === "pagar-todo") {
     const nombre = txt(body.nombre, 60).toLowerCase();

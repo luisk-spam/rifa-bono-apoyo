@@ -475,7 +475,7 @@ function renderHoja(){
        '<div class="seg" role="group" aria-label="Estado">'+
        ["free","res","paid"].map(function(v){var l={free:"Libre",res:"Reservado",paid:"Pagado"}[v];return '<button class="'+v+'" data-act="seg" data-v="'+v+'" aria-pressed="'+(H.e===v)+'">'+l+'</button>';}).join("")+'</div>'+
        '<div class="field"><label for="e-nombre">Nombre</label><input id="e-nombre" list="e-nombres" placeholder="¿A quién se lo vendiste?" value="'+esc(H.n)+'"'+off+'><datalist id="e-nombres">'+names+'</datalist></div>'+
-       '<div class="field"><label for="e-tel">Teléfono (opcional)</label><input id="e-tel" inputmode="tel" value="'+esc(H.tel)+'"'+off+'></div>'+
+       '<div class="field"><label for="e-tel">Celular (se guarda en todos sus números)</label><input id="e-tel" inputmode="tel" value="'+esc(H.tel)+'"'+off+'></div>'+
        '<div class="field"><label for="e-nota">Nota (opcional)</label><input id="e-nota" value="'+esc(H.nota)+'"'+off+'></div>'+
        (b.n&&H.e==="free"?'<p class="hint" style="margin:0">Al guardar, el número se libera y '+esc(b.n)+' deja de tenerlo.</p>':'')+
        (H.err?'<p class="hint" style="margin:0;color:var(--danger)">'+esc(H.err)+'</p>':'')+
@@ -511,7 +511,7 @@ app.addEventListener("click",function(ev){
   if(a==="filtro"){ui.filtro=t.getAttribute("data-v");render();}
   else if(a==="num"){
     var k=t.getAttribute("data-k");
-    if(ui.admin){var b=ESTADO.boletas[k]||{};ui.hoja={tipo:"editar",k:k,e:estadoDe(k),n:b.n||"",tel:b.tel||"",nota:b.nota||""};render();var i=document.getElementById("e-nombre");if(i&&!i.disabled)i.focus();}
+    if(ui.admin){var b=ESTADO.boletas[k]||{},pb=b.n?buscarPersona(b.n):null;ui.hoja={tipo:"editar",k:k,e:estadoDe(k),n:b.n||"",tel:b.tel||(pb&&pb.tel)||"",nota:b.nota||""};render();var i=document.getElementById("e-nombre");if(i&&!i.disabled)i.focus();}
     else if(estadoDe(k)==="free"){var ix=ui.sel.indexOf(k);ix>=0?ui.sel.splice(ix,1):ui.sel.push(k);render();}
   }
   else if(a==="limpiar"){ui.sel=[];render();}
@@ -566,7 +566,10 @@ app.addEventListener("click",function(ev){
   else if(a==="nota-x"){accion({accion:"nota-x",i:+t.getAttribute("data-i")},"Nota resuelta");}
   else if(a==="cfg"){accion({accion:"config",whatsapp:document.getElementById("cfg-wa").value,nequi:document.getElementById("cfg-nequi").value,ganador:document.getElementById("cfg-gan").value},"Ajustes guardados");}
 });
-app.addEventListener("input",function(ev){if(ev.target.id==="buscar"){ui.q=ev.target.value;render();}});
+app.addEventListener("input",function(ev){
+  if(ev.target.id==="buscar"){ui.q=ev.target.value;render();}
+  else if(ev.target.id==="e-nombre"){var pe=buscarPersona(ev.target.value),te=document.getElementById("e-tel");if(pe&&pe.tel&&te&&!te.value)te.value=pe.tel;}
+});
 app.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&ev.target.id==="l-cod"){var b=document.querySelector('[data-act="entrar"]');if(b)b.click();}});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&ui.hoja){ui.hoja=null;render();}});
 
