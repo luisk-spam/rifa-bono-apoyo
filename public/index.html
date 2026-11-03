@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rifa Bono de Apoyo · Samuel Castro</title>
+<meta name="description" content="Escoge tu número de la rifa ¡Bono de apoyo! Juega con la Lotería de Boyacá el sábado 21 de noviembre de 2026.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: cartel de rifa — cabecera tipo boleta, tablero 10×10 de boletas, resumen y lista de compradores debajo; hoja inferior para reservar/editar */
+:root{
+  --bg:#E9EEF7; --surface:#FFFFFF; --surface-2:#F4F7FC; --ink:#0F2557; --muted:#5A6A8C; --line:#D3DBEA;
+  --gold:#E9B13A; --gold-ink:#5C3F00; --navy:#13306E; --navy-ink:#FFFFFF;
+  --paid:#13915F; --paid-bg:#DDF3E8; --res:#D9731A; --res-bg:#FCEBD9; --sel:#2D63E2; --danger:#C2382E;
+  --shadow:0 1px 2px rgba(15,37,87,.08),0 6px 18px rgba(15,37,87,.08);
+  --f-display:"Lilita One","Arial Black",Impact,system-ui,sans-serif;
+  --f-body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#081229; --surface:#101F43; --surface-2:#0C1936; --ink:#E7EDFA; --muted:#97A6C7; --line:#22356A;
+  --gold:#F2BE4D; --gold-ink:#3B2800; --navy:#1E3F8C; --navy-ink:#FFFFFF;
+  --paid:#3CCB8F; --paid-bg:#0F3A2B; --res:#F29A4A; --res-bg:#3D2610; --sel:#6E98FF; --danger:#F07167;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#081229; --surface:#101F43; --surface-2:#0C1936; --ink:#E7EDFA; --muted:#97A6C7; --line:#22356A;
+  --gold:#F2BE4D; --gold-ink:#3B2800; --navy:#1E3F8C; --navy-ink:#FFFFFF;
+  --paid:#3CCB8F; --paid-bg:#0F3A2B; --res:#F29A4A; --res-bg:#3D2610; --sel:#6E98FF; --danger:#F07167;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 120px}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+
+/* Cabecera boleta */
+.hero{background:var(--navy);color:var(--navy-ink);border-radius:18px;padding:20px 20px 18px;position:relative;overflow:hidden;display:grid;gap:14px}
+.hero::after{content:"";position:absolute;inset:auto -40px -60px auto;width:220px;height:220px;border-radius:50%;border:28px solid rgba(255,255,255,.06)}
+.hero .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.8;font-weight:700}
+.hero h1{font-size:clamp(34px,8vw,54px);line-height:.95;color:var(--gold)}
+.hero .sub{font-weight:600;opacity:.95}
+.facts{display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:1}
+.fact{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+.fact b{color:var(--gold)}
+.price{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;position:relative;z-index:1}
+.price .v{font-family:var(--f-display);font-size:34px;color:var(--gold)}
+.price .l{font-size:13px;opacity:.85}
+.count{font-size:13px;opacity:.9}
+
+/* Premio */
+.prize{background:var(--surface);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.prize h3{font-size:18px;color:var(--ink)}
+.prize p{margin:2px 0 0;color:var(--muted);font-size:13.5px}
+
+/* Barra admin */
+.adminbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--gold);color:var(--gold-ink);border-radius:12px;padding:10px 14px;font-weight:700}
+.switch{display:inline-flex;background:rgba(0,0,0,.12);border-radius:999px;padding:3px}
+.switch button{border:0;background:transparent;padding:6px 12px;border-radius:999px;font-weight:700;color:var(--gold-ink)}
+.switch button[aria-pressed="true"]{background:var(--surface);color:var(--ink)}
+
+/* Resumen */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:var(--surface);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);border-top:4px solid var(--line)}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.stat .n{font-family:var(--f-display);font-size:28px;line-height:1.1}
+.stat .m{font-size:12.5px;color:var(--muted)}
+.stat.paid{border-top-color:var(--paid)} .stat.res{border-top-color:var(--res)} .stat.free{border-top-color:var(--sel)}
+.progress{height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden;display:flex;border:1px solid var(--line)}
+.progress i{display:block;height:100%}
+@media (max-width:620px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* Tablero */
+.panel{background:var(--surface);border-radius:16px;padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.panel-head h2{font-size:22px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:600;display:inline-flex;gap:6px;align-items:center}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.dot.free{background:var(--surface);border:2px solid var(--line)} .dot.res{background:var(--res)} .dot.paid{background:var(--paid)}
+.search{width:100%;border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:9px 12px;font:inherit}
+.grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.cell{position:relative;aspect-ratio:1/1.08;max-width:100%;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;min-width:0;transition:transform .12s ease}
+.cell .d{font-family:var(--f-display);font-size:clamp(15px,3.6vw,24px);line-height:1;font-variant-numeric:tabular-nums}
+.cell .who{font-size:clamp(8px,1.6vw,10.5px);font-weight:700;line-height:1.05;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell .tag{font-size:clamp(7px,1.4vw,9.5px);font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.cell::before,.cell::after{content:"";position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--bg)}
+.cell::before{left:-5px} .cell::after{right:-5px}
+.cell.free:hover{transform:translateY(-2px);border-color:var(--sel)}
+.cell.res{background:var(--res-bg);border-color:var(--res);color:var(--ink)} .cell.res .tag{color:var(--res)}
+.cell.paid{background:var(--paid);border-color:var(--paid);color:#fff}
+.cell.paid .tag{color:#fff;opacity:.9}
+.cell.sel{background:var(--sel);border-color:var(--sel);color:#fff;transform:translateY(-2px)}
+.cell.dim{opacity:.22}
+.cell.win{outline:4px solid var(--gold);outline-offset:2px}
+.cell[disabled]{cursor:not-allowed}
+@media (max-width:460px){.grid{gap:4px}.cell{border-radius:7px}.cell::before,.cell::after{width:6px;height:6px;margin-top:-3px}.cell::before{left:-4px}.cell::after{right:-4px}}
+@media (max-width:520px){.cell .who,.cell .tag{display:none}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+
+/* Compradores */
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.person{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0;background:var(--surface-2)}
+.person.allpaid{border-color:var(--paid)}
+.person .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.person .name{font-weight:800;min-width:0;overflow-wrap:anywhere}
+.person .owe{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.pill{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.pill.paid{background:var(--paid-bg);color:var(--paid)} .pill.res{background:var(--res-bg);color:var(--res)} .pill.mix{background:var(--surface);color:var(--muted);border:1px solid var(--line)}
+.tix{display:flex;flex-wrap:wrap;gap:5px}
+.tk{font-family:var(--f-display);font-size:14px;padding:2px 8px;border-radius:6px;border:1.5px solid}
+.tk.paid{background:var(--paid);border-color:var(--paid);color:#fff} .tk.res{background:var(--res-bg);border-color:var(--res);color:var(--ink)}
+button.tk{cursor:pointer}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:10px 14px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+.btn.primary{background:var(--ink);color:var(--surface)}
+.btn.go{background:var(--paid);color:#fff}
+.btn.wa{background:#1DA851;color:#fff}
+.btn.ghost{background:var(--surface-2);color:var(--ink);border:1.5px solid var(--line)}
+.btn.danger{background:transparent;color:var(--danger);border:1.5px solid var(--danger)}
+.btn[disabled]{opacity:.5;cursor:default}
+.notes{border:1.5px dashed var(--res);background:var(--res-bg);border-radius:12px;padding:10px 12px;font-size:13.5px}
+.notes ul{margin:4px 0 0;padding-left:18px}
+.empty{color:var(--muted);font-size:14px;padding:6px 2px}
+
+/* Barra de selección y hoja */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--ink);color:var(--surface);
+  padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  display:flex;justify-content:center}
+.bar .in{max-width:880px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.bar .btn.primary{background:var(--gold);color:var(--gold-ink)}
+.bar .btn.ghost{background:transparent;color:var(--surface);border-color:rgba(255,255,255,.3)}
+.scrim{position:fixed;inset:0;background:rgba(5,12,30,.55);z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:520px;border-radius:18px 18px 0 0;max-height:92%;overflow:auto;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+@media (min-width:640px){.scrim{align-items:center}.sheet{border-radius:18px}}
+.sheet h2{font-size:24px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.field input,.field textarea{border:1.5px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:10px 12px;font:inherit;width:100%}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{border:1.5px solid var(--line);background:var(--surface-2);border-radius:10px;padding:10px 6px;font-weight:700}
+.seg button[aria-pressed="true"].free{border-color:var(--sel);background:var(--sel);color:#fff}
+.seg button[aria-pressed="true"].res{border-color:var(--res);background:var(--res);color:#fff}
+.seg button[aria-pressed="true"].paid{border-color:var(--paid);background:var(--paid);color:#fff}
+.msg{background:var(--surface-2);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;white-space:pre-wrap;user-select:all}
+.hint{font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:999px;font-weight:700;font-size:14px;box-shadow:var(--shadow);max-width:calc(100% - 32px);text-align:center}
+.winner{background:var(--gold);color:var(--gold-ink);border-radius:14px;padding:14px 16px;font-weight:700}
+.winner h2{font-size:26px}
+footer{color:var(--muted);font-size:12.5px;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:12.5px;padding:4px}
+.webtag{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--sel)}
+.loading{color:var(--muted);text-align:center;padding:30px 0}
+</style>
+</head>
+<body>
+<div id="app"><p class="loading">Cargando el tablero…</p></div>
+<script>
+(function(){
+"use strict";
+var API="/api/rifa";
+var SORTEO=new Date("2026-11-21T22:30:00-05:00");
+var ESTADO=null;
+var ui={admin:false,codigo:"",filtro:"todos",q:"",sel:[],hoja:null,guardando:false,toast:"",error:""};
+var app=document.getElementById("app");
+
+try{ ui.codigo=localStorage.getItem("rifa-admin")||""; }catch(e){}
+
+function pad(n){n=String(n);return n.length<2?"0"+n:n;}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+function cop(v){return "$"+Number(v).toLocaleString("es-CO").replace(/,/g,".");}
+function estadoDe(k){var b=ESTADO.boletas[k];return b?(b.e==="pagado"?"paid":"res"):"free";}
+function nums(){var a=[];for(var i=0;i<100;i++)a.push(pad(i));return a;}
+function nombreCorto(){return ESTADO.config.responsable.split(" ")[0];}
+function personas(){
+  var m={};
+  Object.keys(ESTADO.boletas).forEach(function(k){
+    var b=ESTADO.boletas[k],key=b.n.trim().toLowerCase();
+    if(!m[key])m[key]={n:b.n.trim(),tel:"",web:false,nums:[]};
+    if(b.tel&&!m[key].tel)m[key].tel=b.tel;
+    if(b.web)m[key].web=true;
+    m[key].nums.push({k:k,e:b.e});
+  });
+  return Object.keys(m).map(function(x){var p=m[x];p.nums.sort(function(a,b){return a.k<b.k?-1:1;});return p;})
+    .sort(function(a,b){var pa=a.nums.every(function(t){return t.e==="pagado";}),pb=b.nums.every(function(t){return t.e==="pagado";});if(pa!==pb)return pa?1:-1;return a.n.localeCompare(b.n,"es");});
+}
+function stats(){var p=0,r=0;Object.keys(ESTADO.boletas).forEach(function(k){ESTADO.boletas[k].e==="pagado"?p++:r++;});return{p:p,r:r,l:100-p-r};}
+function faltan(){var ms=SORTEO-new Date();if(ms<=0)return "Ya se jugó el sorteo";var d=Math.floor(ms/864e5);return d===0?"Se juega hoy":(d===1?"Falta 1 día":"Faltan "+d+" días");}
+
+/* ---------- Servidor ---------- */
+function api(body){
+  var opts={method:body?"POST":"GET",headers:{}};
+  if(ui.codigo)opts.headers["x-admin-code"]=ui.codigo;
+  if(body){opts.headers["content-type"]="application/json";opts.body=JSON.stringify(body);}
+  return fetch(API,opts).then(function(r){return r.json().catch(function(){return{};}).then(function(d){d._status=r.status;return d;});});
+}
+function cargar(){
+  return api().then(function(d){
+    if(!d.estado)throw new Error();
+    if(ui.codigo&&!d.admin){ui.codigo="";ui.admin=false;try{localStorage.removeItem("rifa-admin");}catch(e){}}
+    else if(d.admin)ui.admin=true;
+    ESTADO=d.estado;ui.error="";
+    ui.sel=ui.sel.filter(function(k){return !ESTADO.boletas[k];});
+    render();
+  }).catch(function(){if(!ESTADO){app.innerHTML='<p class="loading">No se pudo cargar el tablero. Revisa tu conexión y recarga la página.</p>';}});
+}
+function accion(body,okMsg){
+  ui.guardando=true;render();
+  return api(body).then(function(d){
+    ui.guardando=false;
+    if(d._status===200&&d.estado){ESTADO=d.estado;toast(okMsg);return true;}
+    if(d._status===401&&body.accion!=="login"){ui.codigo="";ui.admin=false;try{localStorage.removeItem("rifa-admin");}catch(e){}}
+    if(d.estado)ESTADO=d.estado;
+    toast(d.error||"No se pudo guardar. Intenta de nuevo.");return false;
+  }).catch(function(){ui.guardando=false;toast("Sin conexión. Intenta de nuevo.");return false;});
+}
+
+/* ---------- Render ---------- */
+function render(){
+  if(!ESTADO)return;
+  var s=stats(),V=ESTADO.config.valor,adm=ui.admin,gan=ESTADO.config.ganador,h='<div class="wrap">';
+  if(adm){
+    h+='<div class="adminbar"><span>Estás administrando la rifa</span><button class="btn sm ghost" data-act="salir">Salir</button></div>';
+  }
+  h+='<header class="hero"><div class="eyebrow">Rifa · Responsable: '+esc(ESTADO.config.responsable)+'</div>'+
+     '<h1>'+esc(ESTADO.config.titulo)+'</h1><div class="sub">Gánate el combo: bolso Totto + reloj inteligente PEJE</div>'+
+     '<div class="price"><span class="v num">'+cop(V)+' COP</span><span class="l">valor de cada número</span></div>'+
+     '<div class="facts"><span class="fact">Juega con la <b>Lotería de Boyacá</b></span><span class="fact">Sábado <b>21 de noviembre de 2026</b></span><span class="fact">Gana con las <b>dos últimas cifras</b> del premio mayor</span></div>'+
+     '<div class="count">'+faltan()+' · quedan <b class="num">'+s.l+'</b> números libres</div></header>';
+  if(gan){
+    var gn=adm?(ESTADO.boletas[gan]&&ESTADO.boletas[gan].n):ESTADO.ganadorNombre;
+    h+='<section class="winner"><div class="hint" style="color:inherit">Número ganador</div><h2 class="num">'+esc(gan)+(gn?' · '+esc(gn):(ESTADO.boletas[gan]?'':' · número no vendido'))+'</h2></section>';
+  }
+  if(adm){
+    h+='<section class="stats">'+
+      '<div class="stat"><div class="k">Vendidos</div><div class="n num">'+(s.p+s.r)+'<small style="font-size:16px">/100</small></div><div class="m num">'+cop((s.p+s.r)*V)+' en total</div></div>'+
+      '<div class="stat paid"><div class="k">Pagados</div><div class="n num">'+s.p+'</div><div class="m num">'+cop(s.p*V)+' recibidos</div></div>'+
+      '<div class="stat res"><div class="k">Por cobrar</div><div class="n num">'+s.r+'</div><div class="m num">'+cop(s.r*V)+' pendientes</div></div>'+
+      '<div class="stat free"><div class="k">Libres</div><div class="n num">'+s.l+'</div><div class="m num">'+cop(s.l*V)+' por vender</div></div></section>'+
+      '<div class="progress" aria-label="Avance de la rifa"><i style="width:'+s.p+'%;background:var(--paid)"></i><i style="width:'+s.r+'%;background:var(--res)"></i></div>';
+  }else{
+    h+='<section class="prize"><div><h3>Bolso Totto</h3><p>Correas ajustables y varios compartimentos.</p></div>'+
+       '<div><h3>Reloj inteligente PEJE</h3><p>Pantalla 1,83" TFT, resistencia IP68, pasos, distancia, calorías y ritmo cardiaco.</p></div></section>';
+  }
+  h+='<section class="panel"><div class="panel-head"><h2>'+(adm?"Tablero de números":"Escoge tu número")+'</h2><div class="chips" role="group" aria-label="Filtro">'+
+     chip("todos","Todos",null)+chip("libres","Libres","free")+chip("reservado",adm?"Por pagar":"Apartados","res")+chip("pagado",adm?"Pagados":"Vendidos","paid")+'</div></div>';
+  if(adm)h+='<input class="search" id="buscar" type="search" placeholder="Buscar por nombre o número…" value="'+esc(ui.q)+'">';
+  else h+='<p class="hint" style="margin:0">Toca los números libres que quieras y pulsa <b>Reservar</b>. Quedan apartados a tu nombre y son tuyos cuando '+esc(nombreCorto())+' confirme el pago.</p>';
+  h+='<div class="grid">';
+  var q=ui.q.trim().toLowerCase();
+  nums().forEach(function(k){
+    var st=estadoDe(k),b=ESTADO.boletas[k],sel=ui.sel.indexOf(k)>=0;
+    var match=ui.filtro==="todos"||(ui.filtro==="libres"&&st==="free")||(ui.filtro==="reservado"&&st==="res")||(ui.filtro==="pagado"&&st==="paid");
+    if(adm&&q&&match)match=k.indexOf(q)===0||(b&&b.n.toLowerCase().indexOf(q)>=0);
+    var cls="cell "+(sel?"sel":st)+(match?"":" dim")+(gan===k?" win":"");
+    var label=k+(st==="free"?" libre":st==="res"?" apartado":" pagado")+(adm&&b?" por "+b.n:"");
+    var inner='<span class="d">'+k+'</span>';
+    if(adm&&b)inner+='<span class="who">'+esc(b.n.split(" ")[0])+'</span>';
+    else if(st==="paid")inner+='<span class="tag">Vendido</span>';
+    else if(st==="res")inner+='<span class="tag">Apartado</span>';
+    var dis=(!adm&&st!=="free")?" disabled":"";
+    h+='<button class="'+cls+'" data-act="num" data-k="'+k+'" aria-label="'+esc(label)+'" aria-pressed="'+sel+'"'+dis+'>'+inner+'</button>';
+  });
+  h+='</div><div class="legend"><span><i class="dot free"></i>Libre</span><span><i class="dot res"></i>'+(adm?"Reservado, falta pago":"Apartado")+'</span><span><i class="dot paid"></i>Pagado</span></div></section>';
+
+  if(adm){
+    var ps=personas();
+    if(q)ps=ps.filter(function(p){return p.n.toLowerCase().indexOf(q)>=0||p.nums.some(function(t){return t.k.indexOf(q)===0;});});
+    if(ui.filtro==="pagado")ps=ps.filter(function(p){return p.nums.some(function(t){return t.e==="pagado";});});
+    if(ui.filtro==="reservado")ps=ps.filter(function(p){return p.nums.some(function(t){return t.e!=="pagado";});});
+    h+='<section class="panel"><div class="panel-head"><h2>Compradores</h2><span class="hint num">'+ps.length+' personas · primero los que deben</span></div>';
+    if(ESTADO.notas&&ESTADO.notas.length){
+      h+='<div class="notes"><b>Pendientes de revisar</b><ul>'+ESTADO.notas.map(function(n,i){return '<li>'+esc(n)+' <button class="btn sm ghost" data-act="nota-x" data-i="'+i+'" style="padding:2px 8px">Listo</button></li>';}).join("")+'</ul></div>';
+    }
+    if(!ps.length)h+='<div class="empty">No hay compradores con ese filtro.</div>';
+    h+='<div class="people">';
+    ps.forEach(function(p){
+      var deb=p.nums.filter(function(t){return t.e!=="pagado";}).length,all=deb===0,none=deb===p.nums.length;
+      h+='<div class="person'+(all?" allpaid":"")+'"><div class="top"><div style="min-width:0"><div class="name">'+esc(p.n)+(p.web?' <span class="webtag">· reservó en la web</span>':'')+'</div>'+
+         '<div class="owe num">'+(all?"Pagó "+cop(p.nums.length*V):"Debe "+cop(deb*V))+(p.tel?" · "+esc(p.tel):"")+'</div></div>'+
+         '<span class="pill '+(all?"paid":none?"res":"mix")+'">'+(all?"Pagó":none?"Debe":"Pago parcial")+'</span></div>'+
+         '<div class="tix">'+p.nums.map(function(t){return '<button class="tk '+(t.e==="pagado"?"paid":"res")+'" data-act="num" data-k="'+t.k+'" aria-label="Editar número '+t.k+'">'+t.k+'</button>';}).join("")+'</div>'+
+         (all?"":'<div class="row-actions"><button class="btn sm go" data-act="pagar-todo" data-n="'+esc(p.n)+'"'+(ui.guardando?" disabled":"")+'>Confirmar pago de '+(deb===1?"1 número":deb+" números")+'</button></div>')+
+         '</div>';
+    });
+    h+='</div></section>';
+    h+='<section class="panel"><div class="panel-head"><h2>Ajustes</h2></div>'+
+       '<div class="field"><label for="cfg-wa">WhatsApp para recibir reservas</label><input id="cfg-wa" inputmode="tel" placeholder="Ej: 3001234567" value="'+esc(ESTADO.config.whatsapp)+'"></div>'+
+       '<div class="field"><label for="cfg-gan">Número ganador (después del sorteo)</label><input id="cfg-gan" inputmode="numeric" maxlength="2" placeholder="Ej: 47" value="'+esc(ESTADO.config.ganador)+'"></div>'+
+       '<div class="actions"><button class="btn ghost" data-act="copiar-lista">Copiar lista para WhatsApp</button><button class="btn primary" data-act="cfg"'+(ui.guardando?" disabled":"")+'>Guardar ajustes</button></div></section>';
+  }
+  h+='<footer>Actualizado '+new Date(ESTADO.actualizado).toLocaleString("es-CO",{dateStyle:"medium",timeStyle:"short"})+' · Responsable: '+esc(ESTADO.config.responsable)+
+     (adm?'':'<br><button class="linkbtn" data-act="login">Soy el responsable</button>')+'</footer></div>';
+
+  if(!adm&&ui.sel.length){
+    h+='<div class="bar"><div class="in"><span><b class="num">'+ui.sel.length+'</b> '+(ui.sel.length===1?"número":"números")+' · <b class="num">'+cop(ui.sel.length*V)+'</b></span>'+
+       '<span style="display:flex;gap:8px"><button class="btn ghost sm" data-act="limpiar">Quitar</button><button class="btn primary" data-act="reservar">Reservar</button></span></div></div>';
+  }
+  if(ui.hoja)h+=renderHoja();
+  if(ui.toast)h+='<div class="toast" role="status">'+esc(ui.toast)+'</div>';
+
+  var ae=document.activeElement,focusId=ae&&ae.id,pos=null;
+  if(focusId&&ae.selectionStart!=null)pos=ae.selectionStart;
+  app.innerHTML=h;
+  if(focusId){var f=document.getElementById(focusId);if(f){f.focus();if(pos!=null&&f.setSelectionRange)try{f.setSelectionRange(pos,pos);}catch(e){}}}
+}
+function chip(v,l,dot){return '<button class="chip" data-act="filtro" data-v="'+v+'" aria-pressed="'+(ui.filtro===v)+'">'+(dot?'<i class="dot '+dot+'"></i>':'')+l+'</button>';}
+
+function mensaje(nums_,nombre){
+  var ns=nums_.slice().sort();
+  return "Hola "+nombreCorto()+", aparté "+(ns.length===1?"el número ":"los números ")+ns.join(", ")+
+    " de la rifa "+ESTADO.config.titulo.replace(/[¡!]/g,"")+" (Lotería de Boyacá, sábado 21 de noviembre)."+
+    "\nMi nombre: "+(nombre||"…")+"\nTotal: "+cop(ns.length*ESTADO.config.valor)+" COP";
+}
+function waLink(nums_,nombre){
+  var t=(ESTADO.config.whatsapp||"").replace(/\D/g,"");if(!t)return "";
+  if(t.length===10)t="57"+t;
+  return "https://wa.me/"+t+"?text="+encodeURIComponent(mensaje(nums_,nombre));
+}
+
+function renderHoja(){
+  var H=ui.hoja,h='<div class="scrim" data-act="cerrar-fondo"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="hoja-t">';
+  if(H.tipo==="reservar"){
+    h+='<h2 id="hoja-t">Reservar '+(ui.sel.length===1?"el "+ui.sel[0]:ui.sel.length+" números")+'</h2>'+
+       '<div class="field"><label for="r-nombre">Tu nombre</label><input id="r-nombre" autocomplete="name" placeholder="Nombre y apellido" value="'+esc(H.nombre)+'"></div>'+
+       '<div class="field"><label for="r-tel">Tu celular (opcional)</label><input id="r-tel" inputmode="tel" autocomplete="tel" value="'+esc(H.tel)+'"></div>'+
+       '<p class="hint" style="margin:0">Total a pagar: <b class="num">'+cop(ui.sel.length*ESTADO.config.valor)+'</b>. Los números quedan apartados a tu nombre; '+esc(nombreCorto())+' los confirma cuando recibe el pago.</p>'+
+       (H.err?'<p class="hint" style="margin:0;color:var(--danger)">'+esc(H.err)+'</p>':'')+
+       '<div class="actions"><button class="btn ghost" data-act="cerrar">Cancelar</button><button class="btn primary" data-act="confirmar-reserva"'+(ui.guardando?" disabled":"")+'>'+(ui.guardando?"Apartando…":"Apartar números")+'</button></div>';
+  }else if(H.tipo==="listo"){
+    var link=waLink(H.nums,H.nombre);
+    h+='<h2 id="hoja-t">¡Listo, '+esc(H.nombre.split(" ")[0])+'!</h2>'+
+       '<p style="margin:0">Apartaste '+(H.nums.length===1?"el número ":"los números ")+'<b class="num">'+H.nums.join(", ")+'</b>. Avísale a '+esc(nombreCorto())+' para coordinar el pago de <b class="num">'+cop(H.nums.length*ESTADO.config.valor)+'</b>.</p>'+
+       '<div class="msg" id="r-msg">'+esc(mensaje(H.nums,H.nombre))+'</div>'+
+       '<div class="actions"><button class="btn ghost" data-act="copiar-msg">Copiar mensaje</button>'+
+       (link?'<a class="btn wa" href="'+esc(link)+'" target="_blank" rel="noopener">Enviar por WhatsApp</a>':'')+'</div>'+
+       '<button class="btn ghost" data-act="cerrar">Volver al tablero</button>';
+  }else if(H.tipo==="login"){
+    h+='<h2 id="hoja-t">Entrar como responsable</h2>'+
+       '<div class="field"><label for="l-cod">Código de administrador</label><input id="l-cod" type="password" autocomplete="current-password" value="'+esc(H.cod)+'"></div>'+
+       (H.err?'<p class="hint" style="margin:0;color:var(--danger)">'+esc(H.err)+'</p>':'')+
+       '<div class="actions"><button class="btn ghost" data-act="cerrar">Cancelar</button><button class="btn primary" data-act="entrar"'+(ui.guardando?" disabled":"")+'>'+(ui.guardando?"Revisando…":"Entrar")+'</button></div>';
+  }else{
+    var b=ESTADO.boletas[H.k]||{};
+    var names=personas().map(function(p){return '<option value="'+esc(p.n)+'">';}).join("");
+    var off=H.e==="free"?" disabled":"";
+    h+='<h2 id="hoja-t">Número <span class="num">'+H.k+'</span></h2>'+
+       '<div class="seg" role="group" aria-label="Estado">'+
+       ["free","res","paid"].map(function(v){var l={free:"Libre",res:"Reservado",paid:"Pagado"}[v];return '<button class="'+v+'" data-act="seg" data-v="'+v+'" aria-pressed="'+(H.e===v)+'">'+l+'</button>';}).join("")+'</div>'+
+       '<div class="field"><label for="e-nombre">Nombre</label><input id="e-nombre" list="e-nombres" placeholder="¿A quién se lo vendiste?" value="'+esc(H.n)+'"'+off+'><datalist id="e-nombres">'+names+'</datalist></div>'+
+       '<div class="field"><label for="e-tel">Teléfono (opcional)</label><input id="e-tel" inputmode="tel" value="'+esc(H.tel)+'"'+off+'></div>'+
+       '<div class="field"><label for="e-nota">Nota (opcional)</label><input id="e-nota" value="'+esc(H.nota)+'"'+off+'></div>'+
+       (b.n&&H.e==="free"?'<p class="hint" style="margin:0">Al guardar, el número se libera y '+esc(b.n)+' deja de tenerlo.</p>':'')+
+       (H.err?'<p class="hint" style="margin:0;color:var(--danger)">'+esc(H.err)+'</p>':'')+
+       '<div class="actions"><button class="btn ghost" data-act="cerrar">Cancelar</button><button class="btn primary" data-act="guardar-num"'+(ui.guardando?" disabled":"")+'>'+(ui.guardando?"Guardando…":"Guardar")+'</button></div>';
+  }
+  return h+'</div></div>';
+}
+
+var tt;function toast(m){if(!m){render();return;}ui.toast=m;render();clearTimeout(tt);tt=setTimeout(function(){ui.toast="";render();},3500);}
+function copiar(txt,ok){
+  function fb(){var el=document.getElementById("r-msg");if(el){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r);}toast("Selecciona el texto y cópialo manualmente");}
+  try{navigator.clipboard.writeText(txt).then(function(){toast(ok);},fb);}catch(e){fb();}
+}
+function listaTexto(){
+  var out=["*"+ESTADO.config.titulo+"* · Lotería de Boyacá · 21 nov 2026",""];
+  nums().forEach(function(k){var b=ESTADO.boletas[k];out.push(k+" "+(b?(b.e==="pagado"?"✅ ":"⏳ ")+b.n:"—"));});
+  return out.join("\n");
+}
+function leerHoja(){
+  var H=ui.hoja;if(!H)return;
+  var g=function(id){var e=document.getElementById(id);return e?e.value:null;};
+  if(H.tipo==="editar"){var n=g("e-nombre"),t=g("e-tel"),o=g("e-nota");if(n!=null)H.n=n;if(t!=null)H.tel=t;if(o!=null)H.nota=o;}
+  if(H.tipo==="reservar"){H.nombre=g("r-nombre")||"";H.tel=g("r-tel")||"";}
+  if(H.tipo==="login"){H.cod=g("l-cod")||"";}
+}
+
+/* ---------- Eventos ---------- */
+app.addEventListener("click",function(ev){
+  var t=ev.target.closest("[data-act]");if(!t)return;
+  var a=t.getAttribute("data-act");
+  if(a==="cerrar-fondo"){if(ev.target===t){ui.hoja=null;render();}return;}
+  if(a==="filtro"){ui.filtro=t.getAttribute("data-v");render();}
+  else if(a==="num"){
+    var k=t.getAttribute("data-k");
+    if(ui.admin){var b=ESTADO.boletas[k]||{};ui.hoja={tipo:"editar",k:k,e:estadoDe(k),n:b.n||"",tel:b.tel||"",nota:b.nota||""};render();var i=document.getElementById("e-nombre");if(i&&!i.disabled)i.focus();}
+    else if(estadoDe(k)==="free"){var ix=ui.sel.indexOf(k);ix>=0?ui.sel.splice(ix,1):ui.sel.push(k);render();}
+  }
+  else if(a==="limpiar"){ui.sel=[];render();}
+  else if(a==="reservar"){ui.hoja={tipo:"reservar",nombre:"",tel:""};render();var n=document.getElementById("r-nombre");if(n)n.focus();}
+  else if(a==="confirmar-reserva"){
+    leerHoja();var H=ui.hoja;
+    if(H.nombre.trim().length<2){H.err="Escribe tu nombre para apartar los números.";render();return;}
+    var ns=ui.sel.slice().sort();
+    ui.guardando=true;render();
+    api({accion:"reservar",numeros:ns,nombre:H.nombre.trim(),tel:H.tel.trim()}).then(function(d){
+      ui.guardando=false;
+      if(d.estado)ESTADO=d.estado;
+      if(d.ok){ui.sel=[];ui.hoja={tipo:"listo",nums:ns,nombre:H.nombre.trim()};render();}
+      else{
+        if(d.ocupados)ui.sel=ui.sel.filter(function(k){return d.ocupados.indexOf(k)<0;});
+        H.err=d.error||"No se pudo apartar. Intenta de nuevo.";
+        if(!ui.sel.length){ui.hoja=null;toast(H.err);}else render();
+      }
+    }).catch(function(){ui.guardando=false;H.err="Sin conexión. Intenta de nuevo.";render();});
+  }
+  else if(a==="cerrar"){ui.hoja=null;render();}
+  else if(a==="copiar-msg"){copiar(mensaje(ui.hoja.nums,ui.hoja.nombre),"Mensaje copiado");}
+  else if(a==="copiar-lista"){copiar(listaTexto(),"Lista copiada");}
+  else if(a==="login"){ui.hoja={tipo:"login",cod:""};render();var c=document.getElementById("l-cod");if(c)c.focus();}
+  else if(a==="entrar"){
+    leerHoja();var L=ui.hoja,cod=L.cod.trim();
+    if(!cod){L.err="Escribe el código.";render();return;}
+    ui.guardando=true;render();
+    api({accion:"login",codigo:cod}).then(function(d){
+      ui.guardando=false;
+      if(d.admin){ui.codigo=cod;ui.admin=true;ESTADO=d.estado;ui.sel=[];ui.hoja=null;try{localStorage.setItem("rifa-admin",cod);}catch(e){}toast("Bienvenido, "+nombreCorto());}
+      else{L.err=d.error||"Código incorrecto";render();}
+    }).catch(function(){ui.guardando=false;L.err="Sin conexión. Intenta de nuevo.";render();});
+  }
+  else if(a==="salir"){ui.codigo="";ui.admin=false;ui.q="";try{localStorage.removeItem("rifa-admin");}catch(e){}cargar();}
+  else if(a==="seg"){leerHoja();ui.hoja.e=t.getAttribute("data-v");ui.hoja.err="";render();}
+  else if(a==="guardar-num"){
+    leerHoja();var E=ui.hoja;
+    if(E.e!=="free"&&!E.n.trim()){E.err="Escribe el nombre de quien compró el número.";render();return;}
+    var msg=E.e==="free"?"Número "+E.k+" liberado":E.e==="paid"?"Pago del "+E.k+" confirmado":"Número "+E.k+" reservado para "+E.n.trim();
+    accion({accion:"guardar",k:E.k,e:E.e,n:E.n,tel:E.tel,nota:E.nota},msg).then(function(ok){if(ok)ui.hoja=null;render();});
+  }
+  else if(a==="pagar-todo"){accion({accion:"pagar-todo",nombre:t.getAttribute("data-n")},"Pago confirmado");}
+  else if(a==="nota-x"){accion({accion:"nota-x",i:+t.getAttribute("data-i")},"Nota resuelta");}
+  else if(a==="cfg"){accion({accion:"config",whatsapp:document.getElementById("cfg-wa").value,ganador:document.getElementById("cfg-gan").value},"Ajustes guardados");}
+});
+app.addEventListener("input",function(ev){if(ev.target.id==="buscar"){ui.q=ev.target.value;render();}});
+app.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&ev.target.id==="l-cod"){var b=document.querySelector('[data-act="entrar"]');if(b)b.click();}});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&ui.hoja){ui.hoja=null;render();}});
+
+cargar();
+// Refresca el tablero cada 20 s para ver lo que apartan otras personas
+setInterval(function(){if(!ui.hoja&&!ui.guardando&&document.visibilityState==="visible")cargar();},20000);
+})();
+</script>
+</body>
+</html>
