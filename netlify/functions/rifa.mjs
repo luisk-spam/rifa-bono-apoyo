@@ -23,8 +23,8 @@ const txt = (v, max) => String(v ?? "").trim().slice(0, max);
 function publico(e) {
   const boletas = {};
   for (const [k, b] of Object.entries(e.boletas)) boletas[k] = { e: b.e };
-  const { whatsapp, titulo, responsable, valor, ganador } = e.config;
-  return { config: { whatsapp, titulo, responsable, valor, ganador }, boletas, actualizado: e.actualizado,
+  const { whatsapp, nequi, titulo, responsable, valor, ganador } = e.config;
+  return { config: { whatsapp, nequi, titulo, responsable, valor, ganador }, boletas, actualizado: e.actualizado,
     ganadorNombre: ganador && e.boletas[ganador] ? e.boletas[ganador].n.split(" ")[0] : "" };
 }
 
@@ -112,6 +112,7 @@ export default async (req) => {
     if (Number.isInteger(i) && i >= 0) estado.notas.splice(i, 1);
   } else if (accion === "config") {
     estado.config.whatsapp = txt(body.whatsapp, 20).replace(/[^\d+]/g, "");
+    estado.config.nequi = txt(body.nequi, 20).replace(/\D/g, "");
     const g = String(body.ganador ?? "").replace(/\D/g, "");
     estado.config.ganador = g ? g.padStart(2, "0").slice(-2) : "";
   } else {

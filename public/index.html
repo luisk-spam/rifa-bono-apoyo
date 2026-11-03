@@ -132,6 +132,10 @@ button.tk{cursor:pointer}
 .notes{border:1.5px dashed var(--res);background:var(--res-bg);border-radius:12px;padding:10px 12px;font-size:13.5px}
 .notes ul{margin:4px 0 0;padding-left:18px}
 .empty{color:var(--muted);font-size:14px;padding:6px 2px}
+.paybox{background:var(--surface-2);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.paybox .k{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.paybox .pay-n{font-family:var(--f-display);font-size:30px;line-height:1.1;user-select:all}
+.paybox .btn{margin-top:6px}
 .tabs{display:inline-flex;background:var(--surface-2);border:1.5px solid var(--line);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
 .tab{border:0;background:transparent;border-radius:999px;padding:6px 12px;font-weight:700;font-size:13.5px;color:var(--muted)}
 .tab[aria-selected="true"]{background:var(--ink);color:var(--surface)}
@@ -200,6 +204,8 @@ function cop(v){return "$"+Number(v).toLocaleString("es-CO").replace(/,/g,".");}
 function estadoDe(k){var b=ESTADO.boletas[k];return b?(b.e==="pagado"?"paid":"res"):"free";}
 function nums(){var a=[];for(var i=0;i<100;i++)a.push(pad(i));return a;}
 function nombreCorto(){return ESTADO.config.responsable.split(" ")[0];}
+function nequi(){return (ESTADO.config.nequi||ESTADO.config.whatsapp||"").replace(/\D/g,"");}
+function nequiTxt(){var n=nequi();return n.length===10?n.slice(0,3)+" "+n.slice(3,6)+" "+n.slice(6):n;}
 function personas(){
   var m={};
   Object.keys(ESTADO.boletas).forEach(function(k){
@@ -253,7 +259,7 @@ function render(){
   h+='<header class="hero"><div class="eyebrow">Rifa · Responsable: '+esc(ESTADO.config.responsable)+'</div>'+
      '<h1>'+esc(ESTADO.config.titulo)+'</h1><div class="sub">Gánate el combo: bolso Totto + reloj inteligente PEJE</div>'+
      '<div class="price"><span class="v num">'+cop(V)+' COP</span><span class="l">valor de cada número</span></div>'+
-     '<div class="facts"><span class="fact">Juega con la <b>Lotería de Boyacá</b></span><span class="fact">Sábado <b>21 de noviembre de 2026</b></span><span class="fact">Gana con las <b>dos últimas cifras</b> del premio mayor</span></div>'+
+     '<div class="facts"><span class="fact">Juega con la <b>Lotería de Boyacá</b></span><span class="fact">Sábado <b>21 de noviembre de 2026</b></span><span class="fact">Gana con las <b>dos últimas cifras</b> del premio mayor</span>'+(nequi()?'<span class="fact">Paga por <b>Nequi</b> al <b class="num">'+nequiTxt()+'</b></span>':'')+'</div>'+
      '<div class="count">'+faltan()+' · quedan <b class="num">'+s.l+'</b> números libres</div></header>';
   if(gan){
     var gn=adm?(ESTADO.boletas[gan]&&ESTADO.boletas[gan].n):ESTADO.ganadorNombre;
@@ -295,6 +301,7 @@ function render(){
     h+=renderCompradores(q);
     h+='<section class="panel"><div class="panel-head"><h2>Ajustes</h2></div>'+
        '<div class="field"><label for="cfg-wa">WhatsApp para recibir reservas</label><input id="cfg-wa" inputmode="tel" placeholder="Ej: 3001234567" value="'+esc(ESTADO.config.whatsapp)+'"></div>'+
+       '<div class="field"><label for="cfg-nequi">Número de Nequi para pagos</label><input id="cfg-nequi" inputmode="tel" placeholder="Ej: 3001234567" value="'+esc(nequi())+'"></div>'+
        '<div class="field"><label for="cfg-gan">Número ganador (después del sorteo)</label><input id="cfg-gan" inputmode="numeric" maxlength="2" placeholder="Ej: 47" value="'+esc(ESTADO.config.ganador)+'"></div>'+
        '<div class="actions"><button class="btn ghost" data-act="copiar-lista">Copiar lista para WhatsApp</button><button class="btn primary" data-act="cfg"'+(ui.guardando?" disabled":"")+'>Guardar ajustes</button></div></section>';
   }
@@ -392,6 +399,7 @@ function msgCobro(p){
   return "Hola "+p.n.split(" ")[0]+" 👋 Te escribe "+nombreCorto()+" por "+rifaTxt()+".\n"+
     (d.length===1?"Tienes apartado el número ":"Tienes apartados los números ")+lista(d)+".\n"+
     "Valor pendiente: "+cop(d.length*ESTADO.config.valor)+" COP.\n"+
+    (nequi()?"Puedes pagar por Nequi al "+nequiTxt()+" y enviarme el comprobante por aquí.\n":"")+
     "El sorteo es el sábado 21 de noviembre con la Lotería de Boyacá. ¿Me confirmas cuándo me haces el pago? ¡Gracias y bendiciones!";
 }
 function msgGracias(p){
@@ -407,7 +415,7 @@ function mensaje(nums_,nombre){
   return "Hola pastor "+nombreCorto()+" 👋 Aparté "+(ns.length===1?"el número ":"los números ")+lista(ns)+
     " de "+rifaTxt()+" (Lotería de Boyacá, sábado 21 de noviembre)."+
     "\nMi nombre: "+(nombre||"…")+"\nTotal a pagar: "+cop(ns.length*ESTADO.config.valor)+" COP"+
-    "\n¿Cómo te hago el pago?";
+    (nequi()?"\nTe pago por Nequi y te envío el comprobante por aquí.":"\n¿Cómo te hago el pago?");
 }
 function waLink(nums_,nombre){
   var t=(ESTADO.config.whatsapp||"").replace(/\D/g,"");if(!t)return "";
@@ -421,13 +429,14 @@ function renderHoja(){
     h+='<h2 id="hoja-t">Reservar '+(ui.sel.length===1?"el "+ui.sel[0]:ui.sel.length+" números")+'</h2>'+
        '<div class="field"><label for="r-nombre">Tu nombre</label><input id="r-nombre" autocomplete="name" placeholder="Nombre y apellido" value="'+esc(H.nombre)+'"></div>'+
        '<div class="field"><label for="r-tel">Tu celular (para confirmarte el pago)</label><input id="r-tel" inputmode="tel" autocomplete="tel" value="'+esc(H.tel)+'"></div>'+
-       '<p class="hint" style="margin:0">Total a pagar: <b class="num">'+cop(ui.sel.length*ESTADO.config.valor)+'</b>. Los números quedan apartados a tu nombre; '+esc(nombreCorto())+' los confirma cuando recibe el pago.</p>'+
+       '<p class="hint" style="margin:0">Total a pagar: <b class="num">'+cop(ui.sel.length*ESTADO.config.valor)+'</b>'+(nequi()?' por Nequi al <b class="num">'+nequiTxt()+'</b>':'')+'. Los números quedan apartados a tu nombre y '+esc(nombreCorto())+' los confirma cuando recibe el pago.</p>'+
        (H.err?'<p class="hint" style="margin:0;color:var(--danger)">'+esc(H.err)+'</p>':'')+
        '<div class="actions"><button class="btn ghost" data-act="cerrar">Cancelar</button><button class="btn primary" data-act="confirmar-reserva"'+(ui.guardando?" disabled":"")+'>'+(ui.guardando?"Apartando…":"Apartar números")+'</button></div>';
   }else if(H.tipo==="listo"){
     var link=waLink(H.nums,H.nombre);
     h+='<h2 id="hoja-t">¡Listo, '+esc(H.nombre.split(" ")[0])+'!</h2>'+
-       '<p style="margin:0">Apartaste '+(H.nums.length===1?"el número ":"los números ")+'<b class="num">'+H.nums.join(", ")+'</b>. Avísale a '+esc(nombreCorto())+' para coordinar el pago de <b class="num">'+cop(H.nums.length*ESTADO.config.valor)+'</b>.</p>'+
+       (nequi()?'<div class="paybox"><div class="k">Paga por Nequi</div><div class="pay-n num">'+nequiTxt()+'</div><div>A nombre de '+esc(ESTADO.config.responsable)+' · Valor: <b class="num">'+cop(H.nums.length*ESTADO.config.valor)+'</b></div><button class="btn sm ghost" data-act="copiar-nequi">Copiar número de Nequi</button></div>':'')+
+       '<p style="margin:0">Apartaste '+(H.nums.length===1?"el número ":"los números ")+'<b class="num">'+lista(H.nums)+'</b>. '+(nequi()?'Haz el pago por Nequi y envíale a '+esc(nombreCorto())+' este mensaje con el comprobante:':'Envíale a '+esc(nombreCorto())+' este mensaje para coordinar el pago:')+'</p>'+
        '<div class="msg" id="r-msg">'+esc(mensaje(H.nums,H.nombre))+'</div>'+
        '<div class="actions"><button class="btn ghost" data-act="copiar-msg">Copiar mensaje</button>'+
        (link?'<a class="btn wa" href="'+esc(link)+'" target="_blank" rel="noopener">Enviar por WhatsApp</a>':'')+'</div>'+
@@ -518,6 +527,7 @@ app.addEventListener("click",function(ev){
   }
   else if(a==="cerrar"){setTimeout(function(){ui.hoja=null;render();},0);}
   else if(a==="copiar-msg"){copiar(mensaje(ui.hoja.nums,ui.hoja.nombre),"Mensaje copiado");}
+  else if(a==="copiar-nequi"){copiar(nequi(),"Número de Nequi copiado");}
   else if(a==="copiar-lista"){copiar(listaTexto(),"Lista copiada");}
   else if(a==="login"){ui.hoja={tipo:"login",cod:""};render();var c=document.getElementById("l-cod");if(c)c.focus();}
   else if(a==="entrar"){
@@ -547,7 +557,7 @@ app.addEventListener("click",function(ev){
     accion({accion:"persona",nombre:P.orig,nuevo:P.n.trim(),tel:P.tel.trim()},"Datos de "+P.n.trim()+" guardados").then(function(ok){if(ok)ui.hoja=null;render();});
   }
   else if(a==="nota-x"){accion({accion:"nota-x",i:+t.getAttribute("data-i")},"Nota resuelta");}
-  else if(a==="cfg"){accion({accion:"config",whatsapp:document.getElementById("cfg-wa").value,ganador:document.getElementById("cfg-gan").value},"Ajustes guardados");}
+  else if(a==="cfg"){accion({accion:"config",whatsapp:document.getElementById("cfg-wa").value,nequi:document.getElementById("cfg-nequi").value,ganador:document.getElementById("cfg-gan").value},"Ajustes guardados");}
 });
 app.addEventListener("input",function(ev){if(ev.target.id==="buscar"){ui.q=ev.target.value;render();}});
 app.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&ev.target.id==="l-cod"){var b=document.querySelector('[data-act="entrar"]');if(b)b.click();}});
