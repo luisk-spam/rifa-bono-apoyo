@@ -93,6 +93,20 @@ export default async (req) => {
   } else if (accion === "pagar-todo") {
     const nombre = txt(body.nombre, 60).toLowerCase();
     for (const b of Object.values(estado.boletas)) if (b.n.trim().toLowerCase() === nombre) b.e = "pagado";
+  } else if (accion === "persona") {
+    // Cambia el nombre y/o celular de una persona en todos sus números
+    const nombre = txt(body.nombre, 60).toLowerCase();
+    const nuevo = txt(body.nuevo, 60);
+    const tel = txt(body.tel, 20);
+    if (nuevo.length < 2) return json({ error: "Escribe el nombre." }, 400);
+    let n = 0;
+    for (const b of Object.values(estado.boletas)) {
+      if (b.n.trim().toLowerCase() !== nombre) continue;
+      b.n = nuevo;
+      if (tel) b.tel = tel; else delete b.tel;
+      n++;
+    }
+    if (!n) return json({ error: "No encontré a esa persona. Recarga la página." }, 404);
   } else if (accion === "nota-x") {
     const i = Number(body.i);
     if (Number.isInteger(i) && i >= 0) estado.notas.splice(i, 1);

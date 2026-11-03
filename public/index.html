@@ -132,6 +132,21 @@ button.tk{cursor:pointer}
 .notes{border:1.5px dashed var(--res);background:var(--res-bg);border-radius:12px;padding:10px 12px;font-size:13.5px}
 .notes ul{margin:4px 0 0;padding-left:18px}
 .empty{color:var(--muted);font-size:14px;padding:6px 2px}
+.tabs{display:inline-flex;background:var(--surface-2);border:1.5px solid var(--line);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
+.tab{border:0;background:transparent;border-radius:999px;padding:6px 12px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--surface)}
+.owebox{background:var(--res-bg);border:1.5px solid var(--res);border-radius:12px;padding:10px 12px;font-size:14px}
+.paidlist{border-top:1.5px solid var(--line);padding-top:10px}
+.paidlist summary{cursor:pointer;font-weight:800;padding:4px 0 10px;color:var(--paid)}
+.tablewrap{overflow-x:auto;border:1.5px solid var(--line);border-radius:12px}
+.ntab{width:100%;border-collapse:collapse;font-size:14px}
+.ntab th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:8px 10px;background:var(--surface-2);border-bottom:1.5px solid var(--line)}
+.ntab td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.ntab tr:last-child td{border-bottom:0}
+.ntab .who-cell{font-weight:700;overflow-wrap:anywhere}
+.ntab .who-cell small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.tk.free{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 
 /* Barra de selección y hoja */
 .bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--ink);color:var(--surface);
@@ -174,10 +189,10 @@ footer{color:var(--muted);font-size:12.5px;text-align:center}
 var API="/api/rifa";
 var SORTEO=new Date("2026-11-21T22:30:00-05:00");
 var ESTADO=null;
-var ui={admin:false,codigo:"",filtro:"todos",q:"",sel:[],hoja:null,guardando:false,toast:"",error:""};
+var ui={admin:false,codigo:"",filtro:"todos",q:"",sel:[],hoja:null,guardando:false,toast:"",error:"",vista:"cobrar"};
 var app=document.getElementById("app");
 
-try{ ui.codigo=localStorage.getItem("rifa-admin")||""; }catch(e){}
+try{ ui.codigo=localStorage.getItem("rifa-admin")||""; ui.vista=localStorage.getItem("rifa-vista")||"cobrar"; }catch(e){}
 
 function pad(n){n=String(n);return n.length<2?"0"+n:n;}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
@@ -194,7 +209,7 @@ function personas(){
     if(b.web)m[key].web=true;
     m[key].nums.push({k:k,e:b.e});
   });
-  return Object.keys(m).map(function(x){var p=m[x];p.nums.sort(function(a,b){return a.k<b.k?-1:1;});return p;})
+  return Object.keys(m).map(function(x){var p=m[x];p.nums.sort(function(a,b){return a.k<b.k?-1:1;});p.deb=p.nums.filter(function(t){return t.e!=="pagado";}).length;return p;})
     .sort(function(a,b){var pa=a.nums.every(function(t){return t.e==="pagado";}),pb=b.nums.every(function(t){return t.e==="pagado";});if(pa!==pb)return pa?1:-1;return a.n.localeCompare(b.n,"es");});
 }
 function stats(){var p=0,r=0;Object.keys(ESTADO.boletas).forEach(function(k){ESTADO.boletas[k].e==="pagado"?p++:r++;});return{p:p,r:r,l:100-p-r};}
@@ -277,26 +292,7 @@ function render(){
   h+='</div><div class="legend"><span><i class="dot free"></i>Libre</span><span><i class="dot res"></i>'+(adm?"Reservado, falta pago":"Apartado")+'</span><span><i class="dot paid"></i>Pagado</span></div></section>';
 
   if(adm){
-    var ps=personas();
-    if(q)ps=ps.filter(function(p){return p.n.toLowerCase().indexOf(q)>=0||p.nums.some(function(t){return t.k.indexOf(q)===0;});});
-    if(ui.filtro==="pagado")ps=ps.filter(function(p){return p.nums.some(function(t){return t.e==="pagado";});});
-    if(ui.filtro==="reservado")ps=ps.filter(function(p){return p.nums.some(function(t){return t.e!=="pagado";});});
-    h+='<section class="panel"><div class="panel-head"><h2>Compradores</h2><span class="hint num">'+ps.length+' personas · primero los que deben</span></div>';
-    if(ESTADO.notas&&ESTADO.notas.length){
-      h+='<div class="notes"><b>Pendientes de revisar</b><ul>'+ESTADO.notas.map(function(n,i){return '<li>'+esc(n)+' <button class="btn sm ghost" data-act="nota-x" data-i="'+i+'" style="padding:2px 8px">Listo</button></li>';}).join("")+'</ul></div>';
-    }
-    if(!ps.length)h+='<div class="empty">No hay compradores con ese filtro.</div>';
-    h+='<div class="people">';
-    ps.forEach(function(p){
-      var deb=p.nums.filter(function(t){return t.e!=="pagado";}).length,all=deb===0,none=deb===p.nums.length;
-      h+='<div class="person'+(all?" allpaid":"")+'"><div class="top"><div style="min-width:0"><div class="name">'+esc(p.n)+(p.web?' <span class="webtag">· reservó en la web</span>':'')+'</div>'+
-         '<div class="owe num">'+(all?"Pagó "+cop(p.nums.length*V):"Debe "+cop(deb*V))+(p.tel?" · "+esc(p.tel):"")+'</div></div>'+
-         '<span class="pill '+(all?"paid":none?"res":"mix")+'">'+(all?"Pagó":none?"Debe":"Pago parcial")+'</span></div>'+
-         '<div class="tix">'+p.nums.map(function(t){return '<button class="tk '+(t.e==="pagado"?"paid":"res")+'" data-act="num" data-k="'+t.k+'" aria-label="Editar número '+t.k+'">'+t.k+'</button>';}).join("")+'</div>'+
-         (all?"":'<div class="row-actions"><button class="btn sm go" data-act="pagar-todo" data-n="'+esc(p.n)+'"'+(ui.guardando?" disabled":"")+'>Confirmar pago de '+(deb===1?"1 número":deb+" números")+'</button></div>')+
-         '</div>';
-    });
-    h+='</div></section>';
+    h+=renderCompradores(q);
     h+='<section class="panel"><div class="panel-head"><h2>Ajustes</h2></div>'+
        '<div class="field"><label for="cfg-wa">WhatsApp para recibir reservas</label><input id="cfg-wa" inputmode="tel" placeholder="Ej: 3001234567" value="'+esc(ESTADO.config.whatsapp)+'"></div>'+
        '<div class="field"><label for="cfg-gan">Número ganador (después del sorteo)</label><input id="cfg-gan" inputmode="numeric" maxlength="2" placeholder="Ej: 47" value="'+esc(ESTADO.config.ganador)+'"></div>'+
@@ -319,11 +315,99 @@ function render(){
 }
 function chip(v,l,dot){return '<button class="chip" data-act="filtro" data-v="'+v+'" aria-pressed="'+(ui.filtro===v)+'">'+(dot?'<i class="dot '+dot+'"></i>':'')+l+'</button>';}
 
+/* ---------- Compradores (solo administrador) ---------- */
+function tab(v,l){return '<button class="tab" role="tab" data-act="vista" data-v="'+v+'" aria-selected="'+(ui.vista===v)+'">'+l+'</button>';}
+function renderCompradores(q){
+  var V=ESTADO.config.valor,todas=personas(),vista=ui.vista;
+  var coincide=function(p){return !q||p.n.toLowerCase().indexOf(q)>=0||p.nums.some(function(t){return t.k.indexOf(q)===0;});};
+  var deudores=todas.filter(function(p){return p.deb>0;});
+  var pagaron=todas.filter(function(p){return p.deb===0;});
+  var totalDeuda=deudores.reduce(function(s,p){return s+p.deb;},0)*V;
+  var h='<section class="panel" id="compradores"><div class="panel-head"><h2>Compradores</h2>'+
+    '<div class="tabs" role="tablist" aria-label="Ver compradores">'+tab("cobrar","Por cobrar")+tab("az","A–Z")+tab("numero","Por número")+'</div></div>';
+  if(ESTADO.notas&&ESTADO.notas.length){
+    h+='<div class="notes"><b>Pendientes de revisar</b><ul>'+ESTADO.notas.map(function(n,i){return '<li>'+esc(n)+' <button class="btn sm ghost" data-act="nota-x" data-i="'+i+'" style="padding:2px 8px">Listo</button></li>';}).join("")+'</ul></div>';
+  }
+  if(vista==="numero"){
+    var filas=nums().filter(function(k){
+      var st=estadoDe(k),b=ESTADO.boletas[k];
+      var ok=ui.filtro==="todos"?!!b:(ui.filtro==="libres"&&st==="free")||(ui.filtro==="reservado"&&st==="res")||(ui.filtro==="pagado"&&st==="paid");
+      if(ok&&q)ok=k.indexOf(q)===0||(b&&b.n.toLowerCase().indexOf(q)>=0);
+      return ok;
+    });
+    h+='<p class="hint" style="margin:0">Números vendidos en orden. Usa los filtros del tablero (Libres, Por pagar, Pagados) para cambiar la lista. Toca un número para editarlo.</p>';
+    if(!filas.length)h+='<div class="empty">No hay números con ese filtro.</div>';
+    else{
+      var porNombre={};todas.forEach(function(p){porNombre[p.n.toLowerCase()]=p;});
+      h+='<div class="tablewrap"><table class="ntab"><thead><tr><th>Nº</th><th>Comprador</th><th>Estado</th><th><span class="sr">WhatsApp</span></th></tr></thead><tbody>';
+      filas.forEach(function(k){
+        var b=ESTADO.boletas[k],st=estadoDe(k),p=b&&porNombre[b.n.trim().toLowerCase()];
+        h+='<tr><td><button class="tk '+(st==="paid"?"paid":st==="res"?"res":"free")+'" data-act="num" data-k="'+k+'" aria-label="Editar número '+k+'">'+k+'</button></td>'+
+          '<td class="who-cell">'+(b?esc(b.n)+(b.tel?'<small>'+esc(b.tel)+'</small>':''):'<span class="hint">Libre</span>')+'</td>'+
+          '<td>'+(b?'<span class="pill '+(st==="paid"?"paid":"res")+'">'+(st==="paid"?"Pagó":"Debe")+'</span>':'')+'</td>'+
+          '<td>'+(p&&st==="res"?'<a class="btn wa sm" target="_blank" rel="noopener" href="'+esc(waA(p.tel,msgCobro(p)))+'">Cobrar</a>':'')+'</td></tr>';
+      });
+      h+='</tbody></table></div>';
+    }
+    return h+'</section>';
+  }
+  var ps;
+  if(vista==="cobrar"){
+    ps=deudores.slice().sort(function(a,b){return b.deb-a.deb||a.n.localeCompare(b.n,"es");}).filter(coincide);
+    h+='<div class="owebox"><b class="num">'+deudores.length+'</b> '+(deudores.length===1?"persona debe":"personas deben")+' <b class="num">'+cop(totalDeuda)+'</b>. '+
+       'Toca <b>Cobrar</b> y se abre WhatsApp con el mensaje listo, con todos sus números.</div>';
+    if(!ps.length)h+='<div class="empty">'+(q?"Nadie con ese nombre o número debe.":"¡Nadie debe! Todos pagaron.")+'</div>';
+  }else{
+    ps=todas.slice().sort(function(a,b){return a.n.localeCompare(b.n,"es");}).filter(coincide);
+    h+='<p class="hint" style="margin:0"><span class="num">'+ps.length+'</span> personas en orden alfabético, con todos sus números.</p>';
+    if(!ps.length)h+='<div class="empty">Nadie con ese nombre o número.</div>';
+  }
+  h+='<div class="people">'+ps.map(tarjeta).join("")+'</div>';
+  if(vista==="cobrar"&&pagaron.length&&!q){
+    h+='<details class="paidlist"><summary>Ya pagaron completo ('+pagaron.length+')</summary><div class="people">'+
+       pagaron.slice().sort(function(a,b){return a.n.localeCompare(b.n,"es");}).map(tarjeta).join("")+'</div></details>';
+  }
+  return h+'</section>';
+}
+function tarjeta(p){
+  var V=ESTADO.config.valor,all=p.deb===0,none=p.deb===p.nums.length;
+  return '<div class="person'+(all?" allpaid":"")+'"><div class="top"><div style="min-width:0"><div class="name">'+esc(p.n)+(p.web?' <span class="webtag">· web</span>':'')+'</div>'+
+    '<div class="owe num">'+(all?"Pagó "+cop(p.nums.length*V):"Debe "+cop(p.deb*V)+(none?"":" de "+cop(p.nums.length*V)))+' · '+
+      (p.tel?esc(p.tel):'<button class="linkbtn" style="padding:0" data-act="persona" data-n="'+esc(p.n)+'">agregar celular</button>')+'</div></div>'+
+    '<span class="pill '+(all?"paid":none?"res":"mix")+'">'+(all?"Pagó":none?"Debe":"Pago parcial")+'</span></div>'+
+    '<div class="tix">'+p.nums.map(function(t){return '<button class="tk '+(t.e==="pagado"?"paid":"res")+'" data-act="num" data-k="'+t.k+'" aria-label="Editar número '+t.k+'">'+t.k+'</button>';}).join("")+'</div>'+
+    '<div class="row-actions">'+
+      (all?'<a class="btn wa sm" target="_blank" rel="noopener" href="'+esc(waA(p.tel,msgGracias(p)))+'">Enviar agradecimiento</a>'
+          :'<a class="btn wa sm" target="_blank" rel="noopener" href="'+esc(waA(p.tel,msgCobro(p)))+'">Cobrar por WhatsApp</a>'+
+           '<button class="btn sm go" data-act="pagar-todo" data-n="'+esc(p.n)+'"'+(ui.guardando?" disabled":"")+'>Ya pagó '+cop(p.deb*V)+'</button>')+
+      '<button class="btn sm ghost" data-act="persona" data-n="'+esc(p.n)+'">Editar</button>'+
+    '</div></div>';
+}
+function lista(arr){arr=arr.slice().sort();return arr.length===1?arr[0]:arr.slice(0,-1).join(", ")+" y "+arr[arr.length-1];}
+function telWa(t){t=(t||"").replace(/\D/g,"");if(t.length===10)t="57"+t;return t;}
+function waA(tel,texto){return "https://wa.me/"+telWa(tel)+"?text="+encodeURIComponent(texto);}
+function rifaTxt(){return "la rifa "+ESTADO.config.titulo.replace(/[¡!]/g,"").trim();}
+function msgCobro(p){
+  var d=p.nums.filter(function(t){return t.e!=="pagado";}).map(function(t){return t.k;});
+  return "Hola "+p.n.split(" ")[0]+" 👋 Te escribe "+nombreCorto()+" por "+rifaTxt()+".\n"+
+    (d.length===1?"Tienes apartado el número ":"Tienes apartados los números ")+lista(d)+".\n"+
+    "Valor pendiente: "+cop(d.length*ESTADO.config.valor)+" COP.\n"+
+    "El sorteo es el sábado 21 de noviembre con la Lotería de Boyacá. ¿Me confirmas cuándo me haces el pago? ¡Gracias y bendiciones!";
+}
+function msgGracias(p){
+  var all=p.nums.map(function(t){return t.k;});
+  return "Hola "+p.n.split(" ")[0]+" 🙌 Recibí tu pago de "+cop(all.length*ESTADO.config.valor)+" COP. ¡Muchas gracias!\n"+
+    (all.length===1?"Tu número ":"Tus números ")+lista(all)+" de "+rifaTxt()+(all.length===1?" quedó confirmado.":" quedaron confirmados.")+"\n"+
+    "Juega el sábado 21 de noviembre con la Lotería de Boyacá. ¡Mucha suerte y bendiciones!";
+}
+function buscarPersona(n){n=n.trim().toLowerCase();return personas().filter(function(p){return p.n.toLowerCase()===n;})[0]||null;}
+
 function mensaje(nums_,nombre){
   var ns=nums_.slice().sort();
-  return "Hola "+nombreCorto()+", aparté "+(ns.length===1?"el número ":"los números ")+ns.join(", ")+
-    " de la rifa "+ESTADO.config.titulo.replace(/[¡!]/g,"")+" (Lotería de Boyacá, sábado 21 de noviembre)."+
-    "\nMi nombre: "+(nombre||"…")+"\nTotal: "+cop(ns.length*ESTADO.config.valor)+" COP";
+  return "Hola pastor "+nombreCorto()+" 👋 Aparté "+(ns.length===1?"el número ":"los números ")+lista(ns)+
+    " de "+rifaTxt()+" (Lotería de Boyacá, sábado 21 de noviembre)."+
+    "\nMi nombre: "+(nombre||"…")+"\nTotal a pagar: "+cop(ns.length*ESTADO.config.valor)+" COP"+
+    "\n¿Cómo te hago el pago?";
 }
 function waLink(nums_,nombre){
   var t=(ESTADO.config.whatsapp||"").replace(/\D/g,"");if(!t)return "";
@@ -336,7 +420,7 @@ function renderHoja(){
   if(H.tipo==="reservar"){
     h+='<h2 id="hoja-t">Reservar '+(ui.sel.length===1?"el "+ui.sel[0]:ui.sel.length+" números")+'</h2>'+
        '<div class="field"><label for="r-nombre">Tu nombre</label><input id="r-nombre" autocomplete="name" placeholder="Nombre y apellido" value="'+esc(H.nombre)+'"></div>'+
-       '<div class="field"><label for="r-tel">Tu celular (opcional)</label><input id="r-tel" inputmode="tel" autocomplete="tel" value="'+esc(H.tel)+'"></div>'+
+       '<div class="field"><label for="r-tel">Tu celular (para confirmarte el pago)</label><input id="r-tel" inputmode="tel" autocomplete="tel" value="'+esc(H.tel)+'"></div>'+
        '<p class="hint" style="margin:0">Total a pagar: <b class="num">'+cop(ui.sel.length*ESTADO.config.valor)+'</b>. Los números quedan apartados a tu nombre; '+esc(nombreCorto())+' los confirma cuando recibe el pago.</p>'+
        (H.err?'<p class="hint" style="margin:0;color:var(--danger)">'+esc(H.err)+'</p>':'')+
        '<div class="actions"><button class="btn ghost" data-act="cerrar">Cancelar</button><button class="btn primary" data-act="confirmar-reserva"'+(ui.guardando?" disabled":"")+'>'+(ui.guardando?"Apartando…":"Apartar números")+'</button></div>';
@@ -353,6 +437,20 @@ function renderHoja(){
        '<div class="field"><label for="l-cod">Código de administrador</label><input id="l-cod" type="password" autocomplete="current-password" value="'+esc(H.cod)+'"></div>'+
        (H.err?'<p class="hint" style="margin:0;color:var(--danger)">'+esc(H.err)+'</p>':'')+
        '<div class="actions"><button class="btn ghost" data-act="cerrar">Cancelar</button><button class="btn primary" data-act="entrar"'+(ui.guardando?" disabled":"")+'>'+(ui.guardando?"Revisando…":"Entrar")+'</button></div>';
+  }else if(H.tipo==="persona"){
+    h+='<h2 id="hoja-t">'+esc(H.orig)+'</h2>'+
+       '<div class="field"><label for="p-nombre">Nombre</label><input id="p-nombre" value="'+esc(H.n)+'"><span class="hint">Si lo cambias, se cambia en todos sus números.</span></div>'+
+       '<div class="field"><label for="p-tel">Celular</label><input id="p-tel" inputmode="tel" placeholder="Ej: 3001234567" value="'+esc(H.tel)+'"><span class="hint">Con el celular, el botón de WhatsApp abre directo su chat.</span></div>'+
+       (H.err?'<p class="hint" style="margin:0;color:var(--danger)">'+esc(H.err)+'</p>':'')+
+       '<div class="actions"><button class="btn ghost" data-act="cerrar">Cancelar</button><button class="btn primary" data-act="guardar-persona"'+(ui.guardando?" disabled":"")+'>'+(ui.guardando?"Guardando…":"Guardar")+'</button></div>';
+  }else if(H.tipo==="gracias"){
+    var pp=buscarPersona(H.n);
+    h+='<h2 id="hoja-t">Pago confirmado</h2>'+
+       '<p style="margin:0">Quedaron en verde los números de <b>'+esc(H.n)+'</b>. ¿Le avisas por WhatsApp?</p>'+
+       (pp?'<div class="msg">'+esc(msgGracias(pp))+'</div>'+
+           '<div class="actions"><button class="btn ghost" data-act="cerrar">Ahora no</button><a class="btn wa" target="_blank" rel="noopener" data-act="cerrar" href="'+esc(waA(pp.tel,msgGracias(pp)))+'">Enviar agradecimiento</a></div>'
+          :'<div class="actions"><button class="btn ghost" data-act="cerrar">Cerrar</button></div>')+
+       (pp&&!pp.tel?'<p class="hint" style="margin:0">No tiene celular guardado: WhatsApp te dejará escoger el contacto.</p>':'');
   }else{
     var b=ESTADO.boletas[H.k]||{};
     var names=personas().map(function(p){return '<option value="'+esc(p.n)+'">';}).join("");
@@ -386,6 +484,7 @@ function leerHoja(){
   if(H.tipo==="editar"){var n=g("e-nombre"),t=g("e-tel"),o=g("e-nota");if(n!=null)H.n=n;if(t!=null)H.tel=t;if(o!=null)H.nota=o;}
   if(H.tipo==="reservar"){H.nombre=g("r-nombre")||"";H.tel=g("r-tel")||"";}
   if(H.tipo==="login"){H.cod=g("l-cod")||"";}
+  if(H.tipo==="persona"){H.n=g("p-nombre")||"";H.tel=g("p-tel")||"";}
 }
 
 /* ---------- Eventos ---------- */
@@ -417,7 +516,7 @@ app.addEventListener("click",function(ev){
       }
     }).catch(function(){ui.guardando=false;H.err="Sin conexión. Intenta de nuevo.";render();});
   }
-  else if(a==="cerrar"){ui.hoja=null;render();}
+  else if(a==="cerrar"){setTimeout(function(){ui.hoja=null;render();},0);}
   else if(a==="copiar-msg"){copiar(mensaje(ui.hoja.nums,ui.hoja.nombre),"Mensaje copiado");}
   else if(a==="copiar-lista"){copiar(listaTexto(),"Lista copiada");}
   else if(a==="login"){ui.hoja={tipo:"login",cod:""};render();var c=document.getElementById("l-cod");if(c)c.focus();}
@@ -439,7 +538,14 @@ app.addEventListener("click",function(ev){
     var msg=E.e==="free"?"Número "+E.k+" liberado":E.e==="paid"?"Pago del "+E.k+" confirmado":"Número "+E.k+" reservado para "+E.n.trim();
     accion({accion:"guardar",k:E.k,e:E.e,n:E.n,tel:E.tel,nota:E.nota},msg).then(function(ok){if(ok)ui.hoja=null;render();});
   }
-  else if(a==="pagar-todo"){accion({accion:"pagar-todo",nombre:t.getAttribute("data-n")},"Pago confirmado");}
+  else if(a==="pagar-todo"){var pn=t.getAttribute("data-n");accion({accion:"pagar-todo",nombre:pn},"").then(function(ok){if(ok){ui.hoja={tipo:"gracias",n:pn};render();}});}
+  else if(a==="vista"){ui.vista=t.getAttribute("data-v");try{localStorage.setItem("rifa-vista",ui.vista);}catch(e){}render();}
+  else if(a==="persona"){var pr=buscarPersona(t.getAttribute("data-n"));if(pr){ui.hoja={tipo:"persona",orig:pr.n,n:pr.n,tel:pr.tel};render();var pt=document.getElementById(pr.tel?"p-nombre":"p-tel");if(pt)pt.focus();}}
+  else if(a==="guardar-persona"){
+    leerHoja();var P=ui.hoja;
+    if(P.n.trim().length<2){P.err="Escribe el nombre.";render();return;}
+    accion({accion:"persona",nombre:P.orig,nuevo:P.n.trim(),tel:P.tel.trim()},"Datos de "+P.n.trim()+" guardados").then(function(ok){if(ok)ui.hoja=null;render();});
+  }
   else if(a==="nota-x"){accion({accion:"nota-x",i:+t.getAttribute("data-i")},"Nota resuelta");}
   else if(a==="cfg"){accion({accion:"config",whatsapp:document.getElementById("cfg-wa").value,ganador:document.getElementById("cfg-gan").value},"Ajustes guardados");}
 });
